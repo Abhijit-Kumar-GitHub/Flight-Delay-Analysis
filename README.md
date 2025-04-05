@@ -1,3 +1,7 @@
+# Dataset
+
+Records for 5,000,000+ commercial airline flights in 2015, compiled for the U.S. DOT Air Travel Consumer Report. Each record represents a single flight, including the airline name, flight number, origin/destination airport and flight distance, as well as scheduled/actual departure and arrival times.
+
 # Flight Delay Analysis Project
 
 This project analyzes a real-world flight dataset containing over 6 million records. The data includes detailed flight-level information such as scheduled and actual departure/arrival times, various delay types, taxi times, airline details, and origin/destination airports. The goal is to explore, visualize, and model the factors contributing to flight delays.
