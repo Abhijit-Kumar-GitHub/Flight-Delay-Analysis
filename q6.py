@@ -1,5 +1,5 @@
 """
-Flight Delay Analysis – Predictive Modeling Feasibility
+Flight Delay Analysis - Predictive Modeling Feasibility
 
 Research Question 6:
   "Can we accurately predict flight delays using the available features?"
@@ -136,7 +136,7 @@ def main():
     data_file = os.path.join(base_dir, 'flights.csv')
     
     # Load and preprocess data
-    df = load_data(data_file, )  # or nrows 10000 for testing
+    df = load_data(data_file)  # or nrows =10000 for testing
     df = preprocess_data(df)
     
     # Train and predict using Linear Regression
