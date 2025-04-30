@@ -1,9 +1,5 @@
 """
-flight_delay_analysis.py
-
-Consolidated script for Questions 1–8 of the Flight Delay Analysis project,
-enriched with airline, cancellation‐reason, and airport metadata,
-and with a context‐aware missing‐value strategy.
+flight_delay_analysis.py : a Python script for analyzing flight delay data.
 """
 import os
 import sys
@@ -27,7 +23,7 @@ logging.basicConfig(
 )
 
 # ------------------------------------------------------------------------------
-# Lookup maps
+# Lookup maps made from csv coz felt like ki as they are small and can be hardcoded
 # ------------------------------------------------------------------------------
 AIRLINE_MAP = {
     "UA": "United Air Lines Inc.",
@@ -94,7 +90,7 @@ def summarize_missing(df: pd.DataFrame, name: str):
 # ------------------------------------------------------------------------------
 def handle_missing_contextual(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Context‑aware imputation without chained assignment:
+    Context-aware imputation without chained assignment:
       - Delays → median by airline
       - Taxi times → median by airport
       - Distance → median by route
@@ -104,26 +100,21 @@ def handle_missing_contextual(df: pd.DataFrame) -> pd.DataFrame:
     """
     # 1) Delays by airline
     for col in ['DEPARTURE_DELAY','ARRIVAL_DELAY']:
-        df[col] = df.groupby('AIRLINE_FULL')[col]\
-                    .transform(lambda x: x.fillna(x.median()))
+        df[col] = df.groupby('AIRLINE_FULL')[col].transform(lambda x: x.fillna(x.median()))
 
     # 2) Taxi out by origin airport
-    df['TAXI_OUT'] = df.groupby('ORIGIN_AIRPORT')['TAXI_OUT']\
-                       .transform(lambda x: x.fillna(x.median()))
+    df['TAXI_OUT'] = df.groupby('ORIGIN_AIRPORT')['TAXI_OUT'].transform(lambda x: x.fillna(x.median()))
 
     # 3) Taxi in by destination airport
-    df['TAXI_IN']  = df.groupby('DESTINATION_AIRPORT')['TAXI_IN']\
-                       .transform(lambda x: x.fillna(x.median()))
+    df['TAXI_IN']  = df.groupby('DESTINATION_AIRPORT')['TAXI_IN'].transform(lambda x: x.fillna(x.median()))
 
     # 4) Distance by route
-    df['DISTANCE'] = df.groupby(
-        ['ORIGIN_AIRPORT','DESTINATION_AIRPORT']
-    )['DISTANCE'].transform(lambda x: x.fillna(x.median()))
+    df['DISTANCE'] = df.groupby(['ORIGIN_AIRPORT','DESTINATION_AIRPORT'])['DISTANCE'].transform(lambda x: x.fillna(x.median()))
 
     # 5) Other numeric columns: global median
     other_nums = [
-        'ELAPSED_TIME','AIR_TIME',
-        'AIR_SYSTEM_DELAY','SECURITY_DELAY',
+        'ELAPSED_TIME','AIR_TIME', 'SCHEDULED_TIME','DEPARTURE_TIME',
+        'AIR_SYSTEM_DELAY','SECURITY_DELAY', 'ARRIVAL_TIME',
         'AIRLINE_DELAY','LATE_AIRCRAFT_DELAY','WEATHER_DELAY'
     ]
     for c in other_nums:
@@ -136,8 +127,7 @@ def handle_missing_contextual(df: pd.DataFrame) -> pd.DataFrame:
     df['CANCELLED'] = df['CANCELLED'].fillna(0)
     df['DIVERTED']  = df['DIVERTED'].fillna(0)
 
-    # 7) Cancellation descriptions
-    df['CANCELLATION_DESC'] = df['CANCELLATION_DESC'].fillna('Unknown')
+    # 7) Cancellation reasons - handled later
 
     # 8) Airport metadata fields
     for col in ['ORIG_NAME','ORIG_CITY','ORIG_STATE',
@@ -160,7 +150,7 @@ def preprocess_core(df: pd.DataFrame, airports: pd.DataFrame) -> pd.DataFrame:
     """
     1) Summarize missing in raw flights
     2) Map airline codes & cancellation reasons
-    3) Convert flight‐level numerics to numeric dtype
+    3) Convert flight-level numerics to numeric dtype
     4) Derive FLIGHT_DATE & DEP_HOUR
     5) Merge airport metadata for origin & destination
     6) Impute all remaining missing values
@@ -226,7 +216,7 @@ def preprocess_core(df: pd.DataFrame, airports: pd.DataFrame) -> pd.DataFrame:
 
     # Final missing‐value imputation
     df = handle_missing_contextual(df)
-    summarize_missing(df, "enriched flights (post‐impute)")
+    summarize_missing(df, "enriched flights (post-impute)")
 
     return df
 
@@ -236,13 +226,13 @@ def preprocess_core(df: pd.DataFrame, airports: pd.DataFrame) -> pd.DataFrame:
 def analyze_q1(df: pd.DataFrame):
     out = os.path.join('results','q1'); os.makedirs(out, exist_ok=True)
     # Scatter: Departure vs Arrival Delay
-    plt.figure(figsize=(8,6))
+    plt.figure(figsize=(20,12))
     sns.scatterplot(data=df, x='DEPARTURE_DELAY', y='ARRIVAL_DELAY', alpha=0.3)
     plt.title('Departure Delay vs Arrival Delay')
     plt.xlabel('Departure Delay (min)'); plt.ylabel('Arrival Delay (min)')
     plt.savefig(os.path.join(out,'dep_vs_arr.png')); plt.close()
     # Boxplots of delays & taxi times
-    plt.figure(figsize=(10,6))
+    plt.figure(figsize=(20,12))
     sns.boxplot(data=df[['DEPARTURE_DELAY','ARRIVAL_DELAY','TAXI_OUT','TAXI_IN']])
     plt.title('Boxplot: Delay & Taxi Times'); plt.xticks(rotation=45)
     plt.savefig(os.path.join(out,'boxplots_delays.png')); plt.close()
@@ -261,18 +251,18 @@ def analyze_q2(df: pd.DataFrame):
         Cancel_Rate=('CANCELLED','mean')
     ).reset_index().sort_values('Avg_Dep_Delay')
     # Departure delay bar
-    plt.figure(figsize=(12,6))
+    plt.figure(figsize=(20,12))
     sns.barplot(data=grp, y='AIRLINE_FULL', x='Avg_Dep_Delay')
     plt.title('Avg Departure Delay by Airline'); plt.xlabel('Min'); plt.ylabel('')
     plt.savefig(os.path.join(out,'avg_dep_by_airline.png')); plt.close()
     # Arrival delay bar
-    plt.figure(figsize=(12,6))
+    plt.figure(figsize=(20,12))
     sns.barplot(data=grp, y='AIRLINE_FULL', x='Avg_Arr_Delay')
     plt.title('Avg Arrival Delay by Airline'); plt.xlabel('Min'); plt.ylabel('')
     plt.savefig(os.path.join(out,'avg_arr_by_airline.png')); plt.close()
     # Cancellation rate bar
     grp['Cancel_%'] = grp['Cancel_Rate']*100
-    plt.figure(figsize=(12,6))
+    plt.figure(figsize=(20,12))
     sns.barplot(data=grp, y='AIRLINE_FULL', x='Cancel_%')
     plt.title('Cancellation Rate by Airline (%)'); plt.xlabel('%'); plt.ylabel('')
     plt.savefig(os.path.join(out,'cancel_rate_by_airline.png')); plt.close()
@@ -292,25 +282,25 @@ def analyze_q3(df: pd.DataFrame):
     )
     # By hour
     hr = df.groupby('DEP_HOUR')['DEPARTURE_DELAY'].mean().reset_index()
-    plt.figure(figsize=(10,6))
+    plt.figure(figsize=(20,12))
     sns.lineplot(data=hr, x='DEP_HOUR', y='DEPARTURE_DELAY', marker='o')
     plt.title('Avg Departure Delay by Hour'); plt.xlabel('Hour'); plt.ylabel('Min')
     plt.savefig(os.path.join(out,'dep_delay_by_hour.png')); plt.close()
     # By season
     # ss = df.groupby('Season')['DEPARTURE_DELAY'].mean().reset_index()         -->> warining dera koi
     ss = df.groupby('Season', observed=True)['DEPARTURE_DELAY'].mean().reset_index()
-    plt.figure(figsize=(8,6))
+    plt.figure(figsize=(20,12))
     sns.barplot(data=ss, x='Season', y='DEPARTURE_DELAY')
     plt.title('Avg Departure Delay by Season'); plt.xlabel('Season'); plt.ylabel('Min')
     plt.savefig(os.path.join(out,'dep_delay_by_season.png')); plt.close()
     # Weekend vs Weekday
     df['Is_Weekend'] = df['DAY_OF_WEEK'].isin([6,7])
     wk = df.groupby('Is_Weekend')['DEPARTURE_DELAY'].mean().reset_index()
-    plt.figure(figsize=(6,4))
+    plt.figure(figsize=(20,12))
     sns.barplot(data=wk, x='Is_Weekend', y='DEPARTURE_DELAY')
     plt.title('Weekend vs Weekday Delay'); plt.xlabel('Weekend'); plt.ylabel('Min')
     plt.savefig(os.path.join(out,'weekend_vs_weekday.png')); plt.close()
-    logging.info("Q3 temporal stats:\n%s", df[['DEP_HOUR','Season','Is_Weekend','DEPARTURE_DELAY']].groupby(['Season','Is_Weekend']).mean())
+    logging.info("Q3 temporal stats:\n%s", df[['DEP_HOUR','Season','Is_Weekend','DEPARTURE_DELAY']].groupby(['Season','Is_Weekend'], observed=False).mean())
 
 # ------------------------------------------------------------------------------
 # Q4: Airport & Route Analysis (with city/state labels)
@@ -318,10 +308,9 @@ def analyze_q3(df: pd.DataFrame):
 def analyze_q4(df: pd.DataFrame):
     out = os.path.join('results','q4'); os.makedirs(out, exist_ok=True)
     # Top 10 origins by departure delay
-    orig = df.groupby(['ORIGIN_AIRPORT','ORIG_CITY','ORIG_STATE'])['DEPARTURE_DELAY']\
-             .mean().nlargest(10).reset_index()
+    orig = df.groupby(['ORIGIN_AIRPORT','ORIG_CITY','ORIG_STATE'])['DEPARTURE_DELAY'].mean().nlargest(10).reset_index()
     orig['Label'] = orig['ORIGIN_AIRPORT'] + " (" + orig['ORIG_CITY'] + ", " + orig['ORIG_STATE'] + ")"
-    plt.figure(figsize=(12,6))
+    plt.figure(figsize=(20,12))
     sns.barplot(data=orig, y='Label', x='DEPARTURE_DELAY')
     plt.title('Top 10 Origin Airports by Avg Departure Delay'); plt.xlabel('Min'); plt.ylabel('')
     plt.savefig(os.path.join(out,'top10_origin_dep_delay.png')); plt.close()
@@ -330,7 +319,7 @@ def analyze_q4(df: pd.DataFrame):
     dest = df.groupby(['DESTINATION_AIRPORT','DEST_CITY','DEST_STATE'])['ARRIVAL_DELAY']\
              .mean().nlargest(10).reset_index()
     dest['Label'] = dest['DESTINATION_AIRPORT'] + " (" + dest['DEST_CITY'] + ", " + dest['DEST_STATE'] + ")"
-    plt.figure(figsize=(12,6))
+    plt.figure(figsize=(20,12))
     sns.barplot(data=dest, y='Label', x='ARRIVAL_DELAY')
     plt.title('Top 10 Destination Airports by Avg Arrival Delay'); plt.xlabel('Min'); plt.ylabel('')
     plt.savefig(os.path.join(out,'top10_dest_arr_delay.png')); plt.close()
@@ -340,27 +329,25 @@ def analyze_q4(df: pd.DataFrame):
               .agg(['mean','size']).query('size>=500')\
               .nlargest(10,'mean').reset_index()
     route['Route'] = route['ORIGIN_AIRPORT'] + "→" + route['DESTINATION_AIRPORT']
-    plt.figure(figsize=(12,6))
+    plt.figure(figsize=(20,12))
     sns.barplot(data=route, y='Route', x='mean')
     plt.title('Top 10 Routes by Avg Arrival Delay (≥500 flights)'); plt.xlabel('Min'); plt.ylabel('')
     plt.savefig(os.path.join(out,'top10_routes_arr_delay.png')); plt.close()
 
     # Scatter: flight count vs avg delay
-    all_routes = df.groupby(['ORIGIN_AIRPORT','DESTINATION_AIRPORT'])['ARRIVAL_DELAY']\
-                   .agg(['mean','size']).reset_index()
-    plt.figure(figsize=(8,6))
+    all_routes = df.groupby(['ORIGIN_AIRPORT','DESTINATION_AIRPORT'])['ARRIVAL_DELAY'].agg(['mean','size']).reset_index()
+    plt.figure(figsize=(20,12))
     sns.scatterplot(data=all_routes, x='size', y='mean', alpha=0.5)
     plt.title('Route Volume vs Avg Arrival Delay'); plt.xlabel('Flights'); plt.ylabel('Min')
     plt.savefig(os.path.join(out,'route_volume_vs_delay.png')); plt.close()
 
     # Top 10 busiest airports by volume
-    counts = pd.concat([df['ORIGIN_AIRPORT'], df['DESTINATION_AIRPORT']])\
-               .value_counts().nlargest(10).reset_index()
+    counts = pd.concat([df['ORIGIN_AIRPORT'], df['DESTINATION_AIRPORT']]).value_counts().nlargest(10).reset_index()
     counts.columns = ['IATA','Total_Flights']
     counts = counts.merge(df[['ORIGIN_AIRPORT','ORIG_CITY','ORIG_STATE']].drop_duplicates(),
                           left_on='IATA', right_on='ORIGIN_AIRPORT', how='left')
     counts['Label'] = counts['IATA'] + " (" + counts['ORIG_CITY'] + ", " + counts['ORIG_STATE'] + ")"
-    plt.figure(figsize=(12,6))
+    plt.figure(figsize=(20,12))
     sns.barplot(data=counts, y='Label', x='Total_Flights')
     plt.title('Top 10 Busiest Airports by Flight Volume'); plt.xlabel('Flights'); plt.ylabel('')
     plt.savefig(os.path.join(out,'top10_busiest_airports.png')); plt.close()
@@ -375,14 +362,14 @@ def analyze_q5(df: pd.DataFrame):
     pct  = (sums / sums.sum() * 100).sort_values(ascending=False)
 
     # Bar
-    plt.figure(figsize=(8,6))
+    plt.figure(figsize=(20,12))
     sns.barplot(x=pct.index, y=pct.values)
     plt.title('Delay Attribution (%)'); plt.ylabel('%'); plt.xlabel('')
     plt.savefig(os.path.join(out,'delay_attr_pct.png')); plt.close()
 
     # Boxplot
     df_m = df[causes].melt(var_name='Cause', value_name='Delay')
-    plt.figure(figsize=(10,6))
+    plt.figure(figsize=(20,12))
     sns.boxplot(data=df_m, x='Cause', y='Delay')
     plt.title('Delay Cause Distribution'); plt.xticks(rotation=45)
     plt.savefig(os.path.join(out,'delay_causes_boxplot.png')); plt.close()
@@ -390,24 +377,74 @@ def analyze_q5(df: pd.DataFrame):
 # ------------------------------------------------------------------------------
 # Q6: Predictive Modeling
 # ------------------------------------------------------------------------------
-def analyze_q6(df: pd.DataFrame):
-    out = os.path.join('results','q6'); os.makedirs(out, exist_ok=True)
-    feats = ['DEPARTURE_DELAY','TAXI_OUT','TAXI_IN','DISTANCE']
-    data = df[feats + ['ARRIVAL_DELAY']].dropna()
-    X_train,X_test,y_train,y_test = train_test_split(
-        data[feats], data['ARRIVAL_DELAY'], test_size=0.2, random_state=42
-    )
-    model = LinearRegression().fit(X_train, y_train)
-    y_pred = model.predict(X_test)
-    mae = mean_absolute_error(y_test,y_pred)
-    r2  = r2_score(y_test,y_pred)
-    logging.info(f"Q6 MAE={mae:.2f}, R²={r2:.3f}")
+def analyze_q6(df: pd.DataFrame, correlation_threshold=0.2):
+    """
+    Analyzes the relationship between flight features and arrival delay,
+    builds a linear regression model, and optionally filters features
+    based on correlation with the target variable.
 
-    plt.figure(figsize=(8,6))
-    sns.scatterplot(x=y_test, y=y_pred, alpha=0.3)
-    plt.plot([y_test.min(),y_test.max()],[y_test.min(),y_test.max()],'r--')
-    plt.title('Actual vs Predicted Arrival Delay'); plt.xlabel('Actual'); plt.ylabel('Predicted')
-    plt.savefig(os.path.join(out,'pred_vs_actual.png')); plt.close()
+    Args:
+        df (pd.DataFrame): The input DataFrame containing flight data with columns: 'DEPARTURE_DELAY', 'TAXI_OUT',
+                                                                                    'TAXI_IN', 'DISTANCE', and 'ARRIVAL_DELAY'.
+        correlation_threshold (float, optional): The minimum absolute correlation value to include a feature in the model.Defaults to 0.5.
+    """
+    out_dir = os.path.join('results', 'q6')
+    os.makedirs(out_dir, exist_ok=True)
+
+    # 1. Feature Preparation
+    feats = ['DEPARTURE_DELAY', 'TAXI_OUT', 'TAXI_IN', 'DISTANCE']
+    data = df[feats + ['ARRIVAL_DELAY']].dropna()
+
+    # 2. Correlation Analysis
+    correlation_matrix = data.corr()
+    target_correlation = correlation_matrix['ARRIVAL_DELAY'].abs().sort_values(ascending=False)
+
+    print("\nCorrelation with Arrival Delay:")
+    print(target_correlation)
+
+    plt.figure(figsize=(10, 8))
+    sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', fmt=".2f")
+    plt.title('Correlation Heatmap of Flight Features and Arrival Delay')
+    plt.savefig(os.path.join(out_dir, 'correlation_heatmap.png'))
+    plt.close()
+
+    # 3. Feature Selection based on correlation
+    selected_features = target_correlation[
+        (target_correlation.index != 'ARRIVAL_DELAY') & (target_correlation > correlation_threshold)].index.tolist()
+
+    print(f"\nSelected features based on correlation threshold ({correlation_threshold}): {selected_features}")
+    logging.info(f"Q6 selected features: {selected_features}")
+
+    if not selected_features:
+        print("No features passed the correlation threshold. Using all features.")
+        selected_features = feats
+
+    # 4. Split Data
+    X = data[selected_features]
+    y = data['ARRIVAL_DELAY']
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+    # 5. Train Model
+    model = LinearRegression().fit(X_train, y_train)
+
+    # 6. Predict & Evaluate
+    y_pred = model.predict(X_test)
+    mae = mean_absolute_error(y_test, y_pred)
+    r2 = r2_score(y_test, y_pred)
+
+    logging.info(f"Q6 MAE={mae:.2f}, R²={r2:.3f}")
+    print(f"Q6 MAE={mae:.2f}, R²={r2:.3f}")
+
+    # 7. Plot Actual vs Predicted
+    plt.figure(figsize=(10, 8))
+    plt.scatter(y_test, y_pred, alpha=0.5)
+    plt.plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], 'r--')
+    plt.title('Actual vs Predicted Arrival Delay')
+    plt.xlabel('Actual Arrival Delay')
+    plt.ylabel('Predicted Arrival Delay')
+    plt.savefig(os.path.join(out_dir, 'pred_vs_actual.png'))
+    plt.close()
+
 
 # ------------------------------------------------------------------------------
 # Q7: Cancellation & Diversion Analysis
@@ -415,9 +452,8 @@ def analyze_q6(df: pd.DataFrame):
 def analyze_q7(df: pd.DataFrame):
     out = os.path.join('results','q7'); os.makedirs(out, exist_ok=True)
     # Reasons
-    reasons = df[df['CANCELLED']==1]['CANCELLATION_DESC']\
-                .value_counts(normalize=True)*100
-    plt.figure(figsize=(8,6))
+    reasons = df[df['CANCELLED']==1]['CANCELLATION_DESC'].value_counts(normalize=True)*100
+    plt.figure(figsize=(20,12))
     sns.barplot(x=reasons.index, y=reasons.values)
     plt.title('Cancellation Reasons (%)'); plt.ylabel('%'); plt.xlabel('')
     plt.savefig(os.path.join(out,'cancel_reasons_pct.png')); plt.close()
@@ -425,14 +461,14 @@ def analyze_q7(df: pd.DataFrame):
     # Delay by cancel/divert
     for flag in ['CANCELLED','DIVERTED']:
         grp = df.groupby(flag)['ARRIVAL_DELAY'].mean().reset_index()
-        plt.figure(figsize=(6,4))
+        plt.figure(figsize=(20,12))
         sns.barplot(data=grp, x=flag, y='ARRIVAL_DELAY')
         plt.title(f'Avg Arrival Delay by {flag}'); plt.ylabel('Min'); plt.xlabel(flag)
         plt.savefig(os.path.join(out,f'arr_delay_by_{flag.lower()}.png')); plt.close()
 
     # Corr heatmap
     corr = df[['CANCELLED','DIVERTED','DEPARTURE_DELAY','ARRIVAL_DELAY']].corr()
-    plt.figure(figsize=(6,5))
+    plt.figure(figsize=(20,12))
     sns.heatmap(corr, annot=True, fmt=".2f", cmap="vlag")
     plt.title('Correlation: Cancel/Divert & Delays')
     plt.savefig(os.path.join(out,'corr_cancel_divert.png')); plt.close()
@@ -445,31 +481,29 @@ def analyze_q8(df: pd.DataFrame):
     df['GROUND_TIME'] = df['ELAPSED_TIME'] - df['AIR_TIME']
 
     # Scatter: Taxi Out vs Ground Time
-    plt.figure(figsize=(8,6))
+    plt.figure(figsize=(20,12))
     sns.scatterplot(data=df, x='TAXI_OUT', y='GROUND_TIME', alpha=0.3)
     plt.title('Taxi Out vs Ground Time'); plt.xlabel('Taxi Out'); plt.ylabel('Ground Time')
     plt.savefig(os.path.join(out,'taxi_out_vs_ground.png')); plt.close()
 
     # Scatter: Taxi In vs Ground Time
-    plt.figure(figsize=(8,6))
+    plt.figure(figsize=(20,12))
     sns.scatterplot(data=df, x='TAXI_IN', y='GROUND_TIME', alpha=0.3)
     plt.title('Taxi In vs Ground Time'); plt.xlabel('Taxi In'); plt.ylabel('Ground Time')
     plt.savefig(os.path.join(out,'taxi_in_vs_ground.png')); plt.close()
 
     # Top 10 origin taxi out
-    top_orig = df.groupby(['ORIGIN_AIRPORT','ORIG_CITY','ORIG_STATE'])['TAXI_OUT']\
-                 .mean().nlargest(10).reset_index()
+    top_orig = df.groupby(['ORIGIN_AIRPORT','ORIG_CITY','ORIG_STATE'])['TAXI_OUT'].mean().nlargest(10).reset_index()
     top_orig['Label'] = top_orig['ORIGIN_AIRPORT'] + " (" + top_orig['ORIG_CITY'] + ")"
-    plt.figure(figsize=(12,6))
+    plt.figure(figsize=(20,12))
     sns.barplot(data=top_orig, y='Label', x='TAXI_OUT')
     plt.title('Top 10 Origin Taxi Out'); plt.xlabel('Min'); plt.ylabel('')
     plt.savefig(os.path.join(out,'top10_orig_taxi_out.png')); plt.close()
 
     # Top 10 dest taxi in
-    top_dest = df.groupby(['DESTINATION_AIRPORT','DEST_CITY','DEST_STATE'])['TAXI_IN']\
-                 .mean().nlargest(10).reset_index()
+    top_dest = df.groupby(['DESTINATION_AIRPORT','DEST_CITY','DEST_STATE'])['TAXI_IN'].mean().nlargest(10).reset_index()
     top_dest['Label'] = top_dest['DESTINATION_AIRPORT'] + " (" + top_dest['DEST_CITY'] + ")"
-    plt.figure(figsize=(12,6))
+    plt.figure(figsize=(20,12))
     sns.barplot(data=top_dest, y='Label', x='TAXI_IN')
     plt.title('Top 10 Destination Taxi In'); plt.xlabel('Min'); plt.ylabel('')
     plt.savefig(os.path.join(out,'top10_dest_taxi_in.png')); plt.close()
@@ -477,7 +511,7 @@ def analyze_q8(df: pd.DataFrame):
     # Correlation heatmap
     cols = ['TAXI_OUT','TAXI_IN','GROUND_TIME','DEPARTURE_DELAY','ARRIVAL_DELAY']
     corr = df[cols].corr()
-    plt.figure(figsize=(6,5))
+    plt.figure(figsize=(20,12))
     sns.heatmap(corr, annot=True, fmt=".2f", cmap="vlag")
     plt.title('Corr Turnaround Metrics')
     plt.savefig(os.path.join(out,'corr_turnaround.png')); plt.close()
@@ -496,6 +530,9 @@ def main():
 
     # Preprocess & enrich
     df = preprocess_core(df_flights, df_airports)
+    print(df.info())
+    print(df.describe())
+    print(df.head())
 
     # Run all analyses
     analyze_q1(df)
